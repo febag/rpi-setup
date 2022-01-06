@@ -61,12 +61,14 @@ image_iso="$image_path/image.img"
 
 # Consider checking latest ver/sha online, download only if newer
 # https://downloads.raspberrypi.org/raspbian_lite/images/?C=M;O=D
+# https://downloads.raspberrypi.org/raspios_lite_armhf/images/?C=M;O=D
 # For now just delete any prior download zip to force downloading latest version
 if [ ! -f $image_zip ]; then
   mkdir -p ./downloads
   echo "Downloading latest Raspbian lite image"
   # curl often gave "error 18 - transfer closed with outstanding read data remaining"
-  wget -O $image_zip "https://downloads.raspberrypi.org/raspbian_lite_latest"
+  # wget -O $image_zip "https://downloads.raspberrypi.org/raspbian_lite_latest"
+  curl -o $image_zip -L "https://downloads.raspberrypi.org/raspios_lite_armhf_latest"
 
   if [ $? -ne 0 ]; then
     echo "Download failed" ; exit -1;
@@ -123,28 +125,28 @@ if [ $? -ne 0 ]; then
   echo "Configuring ssh failed" ; exit -1
 fi
 
-echo "Configuring Wi-Fi"
+# echo "Configuring Wi-Fi"
 
-wifi_ssid=$(/System/Library/PrivateFrameworks/Apple80211.framework/Resources/airport -I | awk -F: '/ SSID/{print $2}')
-wifi_ssid=`echo $wifi_ssid | sed 's/^ *//g'` # trim
+# wifi_ssid=$(/System/Library/PrivateFrameworks/Apple80211.framework/Resources/airport -I | awk -F: '/ SSID/{print $2}')
+# wifi_ssid=`echo $wifi_ssid | sed 's/^ *//g'` # trim
 
-echo "Wi-Fi password for ${wifi_ssid}:"
-read -s wifi_pwd
+# echo "Wi-Fi password for ${wifi_ssid}:"
+# read -s wifi_pwd
 
-cat >"$volume"/wpa_supplicant.conf <<EOL
-ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
-update_config=1
-country=US
+# cat >"$volume"/wpa_supplicant.conf <<EOL
+# ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
+# update_config=1
+# country=US
 
-network={
-	ssid="${wifi_ssid}"
-	psk="${wifi_pwd}"
-}
-EOL
+# network={
+# 	ssid="${wifi_ssid}"
+# 	psk="${wifi_pwd}"
+# }
+# EOL
 
-if [ $? -ne 0 ]; then
-  echo "Configuring wifi failed" ; exit -1
-fi
+# if [ $? -ne 0 ]; then
+#   echo "Configuring wifi failed" ; exit -1
+# fi
 
 echo "Copying setup script. After Pi boot, run: sudo /boot/setup.sh"
 cp setup.sh "$volume"
@@ -153,10 +155,10 @@ echo "Modifying setup script"
 # Replace "${host}" placeholder in the setup script on SD card with final host name passed to script
 sed -i -e "s/\${host}/${host_name}/" "$volume/setup.sh"
 
-echo "Copying docker pull script for app updates"
-cp pull.sh "$volume"
+# echo "Copying docker pull script for app updates"
+# cp pull.sh "$volume"
 
-cp raspbian-build.sh "$volume"
+# cp raspbian-build.sh "$volume"  
 
 echo "Image burned. Remove SD card, insert in PI and power on"
 sudo diskutil eject "$disk_name"
