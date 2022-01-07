@@ -1,7 +1,8 @@
 #!/bin/sh
-
 # Original script: https://github.com/thnk2wn/rasp-cat-siren/blob/main/pi-setup/sd-card-write.sh
 
+
+# PARAMETERS #
 # ./sd-card-write.sh [--host hostname]
 
 # Final host name (not initial login)
@@ -21,6 +22,8 @@ while [[ $# -ge 1 ]]; do
     shift
 done
 
+
+# EXTERNAL DISK INFO #
 disk_name=$(diskutil list external | grep -o '^/dev\S*')
 if [ -z "$disk_name" ]; then
     echo "Didn't find an external disk" ; exit -1
@@ -49,19 +52,18 @@ if [ "$CONT" = "n" ]; then
   exit -1
 fi
 
+
+# DOWNLOAD AND EXTRACT RASPBERRY PI OS IMAGE #
 image_path=./downloads
 image_zip="$image_path/image.zip"
 image_iso="$image_path/image.img"
 
 # Consider checking latest ver/sha online, download only if newer
-# https://downloads.raspberrypi.org/raspbian_lite/images/?C=M;O=D
 # https://downloads.raspberrypi.org/raspios_lite_armhf/images/?C=M;O=D
 # For now just delete any prior download zip to force downloading latest version
 if [ ! -f $image_zip ]; then
   mkdir -p ./downloads
   echo "Downloading latest Raspbian lite image"
-  # curl often gave "error 18 - transfer closed with outstanding read data remaining"
-  # wget -O $image_zip "https://downloads.raspberrypi.org/raspbian_lite_latest"
   curl -o $image_zip -L "https://downloads.raspberrypi.org/raspios_lite_armhf_latest"
 
   if [ $? -ne 0 ]; then
@@ -76,6 +78,8 @@ if [ $? -ne 0 ]; then
     echo "Unzipping image ${image_zip} failed" ; exit -1;
 fi
 
+
+# EXTERNAL DISK FORMATTING #
 echo "Formatting ${disk_name} as FAT32"
 sudo diskutil eraseDisk FAT32 PI MBRFormat "$disk_name"
 
@@ -83,6 +87,8 @@ if [ $? -ne 0 ]; then
     echo "Formatting disk ${disk_name} failed" ; exit -1;
 fi
 
+
+# COPY THE IMAGE TO THE SD CARD #
 echo "Unmounting ${disk_name} before writing image"
 diskutil unmountdisk "$disk_name"
 
@@ -110,6 +116,8 @@ done
 echo "Removing ${image_iso}. Re-extract later if needed from ${image_zip}"
 rm $image_iso
 
+
+# ENABLE SSH AND COPY INITIAL SETUP SCRIPT #
 volume="/Volumes/boot"
 
 echo "Enabling ssh"
@@ -118,29 +126,6 @@ touch "$volume"/ssh
 if [ $? -ne 0 ]; then
   echo "Configuring ssh failed" ; exit -1
 fi
-
-# echo "Configuring Wi-Fi"
-
-# wifi_ssid=$(/System/Library/PrivateFrameworks/Apple80211.framework/Resources/airport -I | awk -F: '/ SSID/{print $2}')
-# wifi_ssid=`echo $wifi_ssid | sed 's/^ *//g'` # trim
-
-# echo "Wi-Fi password for ${wifi_ssid}:"
-# read -s wifi_pwd
-
-# cat >"$volume"/wpa_supplicant.conf <<EOL
-# ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
-# update_config=1
-# country=US
-
-# network={
-# 	ssid="${wifi_ssid}"
-# 	psk="${wifi_pwd}"
-# }
-# EOL
-
-# if [ $? -ne 0 ]; then
-#   echo "Configuring wifi failed" ; exit -1
-# fi
 
 echo "Copying setup script. After Pi boot, run: sudo /boot/setup.sh"
 cp setup.sh "$volume"
@@ -154,11 +139,15 @@ fi
 # echo "Copying docker pull script for app updates"
 # cp pull.sh "$volume"
 
-# cp raspbian-build.sh "$volume"  
+# cp raspbian-build.sh "$volume" 
 
+
+# EJECT DISK #
 echo "Image burned. Remove SD card, insert in PI and power on"
 sudo diskutil eject "$disk_name"
 
+
+# REMOVE SSH KEYS #
 echo "Removing any prior PI SSH known hosts entry"
 ssh-keygen -R raspberrypi.local # initial
 if [ -n "$host_name" ]; then
