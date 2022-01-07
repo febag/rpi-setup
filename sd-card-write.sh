@@ -2,14 +2,13 @@
 
 # Original script: https://github.com/thnk2wn/rasp-cat-siren/blob/main/pi-setup/sd-card-write.sh
 
-# ./sd-card-write.sh --host catsirenpi
+# ./sd-card-write.sh [--host hostname]
 
 # Final host name (not initial login)
 host_name=""
 
-while [[ $# -ge 1 ]]; do  # Mejorar con options? Options solo es de Bash?
-    i="$1"
-    case $i in
+while [[ $# -ge 1 ]]; do
+    case $1 in
         -h|--host)
             host_name=$2
             shift
@@ -21,11 +20,6 @@ while [[ $# -ge 1 ]]; do  # Mejorar con options? Options solo es de Bash?
     esac
     shift
 done
-
-if [ -z "$host_name" ]; then
-  echo "Final Pi host name is required (-h | --host)" >&2
-  exit 1
-fi
 
 disk_name=$(diskutil list external | grep -o '^/dev\S*')
 if [ -z "$disk_name" ]; then
@@ -151,9 +145,11 @@ fi
 echo "Copying setup script. After Pi boot, run: sudo /boot/setup.sh"
 cp setup.sh "$volume"
 
-echo "Modifying setup script"
-# Replace "${host}" placeholder in the setup script on SD card with final host name passed to script
-sed -i -e "s/\${host}/${host_name}/" "$volume/setup.sh"
+if [ -n "$host_name" ]; then
+  echo "Modifying setup script"
+  # Replace "${host}" placeholder in the setup script on SD card with final host name passed to script
+  sed -i -e "s/\${host}/${host_name}/" "$volume/setup.sh"
+fi
 
 # echo "Copying docker pull script for app updates"
 # cp pull.sh "$volume"
@@ -165,7 +161,9 @@ sudo diskutil eject "$disk_name"
 
 echo "Removing any prior PI SSH known hosts entry"
 ssh-keygen -R raspberrypi.local # initial
-ssh-keygen -R "$host_name.local"
+if [ -n "$host_name" ]; then
+  ssh-keygen -R "$host_name.local"
+fi
 
 echo "Power up the PI and give it a minute then"
 echo "  ssh pi@raspberrypi.local"
