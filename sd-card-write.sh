@@ -48,6 +48,10 @@ echo $disk_free
 echo
 
 read -p "Format ${disk_name} (${volume}) (y/n)?" CONT
+until [[ $CONT =~ [yn] ]]; do
+  read -p "Please provide a valid input (y/n)" CONT
+done
+
 if [ "$CONT" = "n" ]; then
   exit -1
 fi
