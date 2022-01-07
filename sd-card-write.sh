@@ -47,9 +47,12 @@ diskutil list external
 echo $disk_free
 echo
 
-read -p "Format ${disk_name} (${volume}) (y/n)?" CONT
+read -p "Format ${disk_name} (${volume}) (y/n)? [y]" CONT
 until [[ $CONT =~ [yn] ]]; do
-  read -p "Please provide a valid input (y/n)" CONT
+    if [ -z "$CONT" ]; then
+        break
+    fi
+    read -p "Please provide a valid input (y/n) [y]" CONT
 done
 
 if [ "$CONT" = "n" ]; then
