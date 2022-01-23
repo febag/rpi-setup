@@ -14,17 +14,13 @@ sed -e 's/$//' -e 's/^\s*/\/usr\/bin\/raspi-config nonint /' | bash -x -
 
 # Hardware Configuration
 do_boot_wait 0            # Turn on waiting for network before booting
-do_boot_splash 1          # Disable the splash screen
-do_overscan 1             # Enable overscan
-do_camera 1               # Enable the camera
-do_ssh 0                  # Enable remote ssh login
-# GPIO enabled later after installing wiringpi to avoid error
+do_memory_split 1         # Set the GPU memory limit to 1MB
 
 # System Configuration
-do_configure_keyboard us
+do_configure_keyboard es
+do_change_timezone Europe/Madrid
+# do_change_locale LANG=es_ES.UTF-8
 do_hostname ${host}
-do_change_timezone America/New_York
-do_change_locale LANG=en_US.UTF-8
 
 # Don't add any raspi-config configuration options after 'END' line below & don't remove 'END' line
 END
@@ -41,19 +37,17 @@ sudo passwd pi
 echo "Updating packages"
 sudo apt-get update && sudo apt-get -y upgrade
 
-# rasp-config non-interactive do_camera didn't seem to work
-echo "Enabling camera"
-sed -i "s/start_x=0/start_x=1/g" /boot/config.txt
+echo "Set up a static IP Adress"
+cat >> /etc/dhcpcd.conf << EOF
 
-echo "Moving pull script from boot to home"
-mv /boot/pull.sh /home/pi
-
-echo "Installing Docker"
-# Installing docker will disconnect ssh
-curl -sSL https://get.docker.com | sh
-
-echo "Finishing docker setup"
-sudo usermod -aG docker pi
+# Static IP address configuration
+interface eth0
+#IP address. First 24 bytes as subnet mask
+static ip_address=10.128.0.244/24
+#Router's IP address
+static routers=10.128.0.1
+static domain_name_servers= 1.1.1.1 8.8.8.8
+EOF
 
 echo "Restarting to apply changes. After run ssh pi@${host}.local"
 # Reboot after all changes above complete
