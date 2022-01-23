@@ -25,11 +25,17 @@ do_hostname ${host}
 # Don't add any raspi-config configuration options after 'END' line below & don't remove 'END' line
 END
 
-# Note: do_camera 1 doesn't seem to work / be enough. Enabled below via /boot/config.txt mod.
-
 ############# CUSTOM COMMANDS ###########
 # You may add your own custom GNU/Linux commands below this line
 # These commands will execute as the root user
+
+# Change locale. I was not able to change it via raspi-config
+# sudo sed -i -e "/^[^#]/s/^/#/" -e "/en_US.UTF-8/s/^#//" /etc/locale.gen
+# export LANGUAGE=en_US.UTF-8
+# export LANG=en_US.UTF-8
+# export LC_ALL=en_US.UTF-8
+# locale-gen en_US.UTF-8
+# sudo dpkg-reconfigure -f noninteractive locales
 
 # Interactively set password for your login. Going through raspi-config w/do_change_pass is slower
 sudo passwd pi
